@@ -1,0 +1,26 @@
+[package]
+name = "axhash-map"
+version = "0.1.0"
+edition = "2024"
+authors = ["Bagus Dwi Harianto robbymangkualam2000@gmail.com"]
+license = "MIT"
+repository = "https://github.com/robby031/axhash"
+description = "High-performance HashMap and HashSet backed by hashbrown (SwissTable) and fueled by axhash."
+keywords = ["hashmap", "hashset", "hash", "performance", "swisstable"]
+categories = ["data-structures", "algorithms"]
+readme = "README.md"
+
+[dependencies]
+# axhash-core is the implementation crate that owns AxBuildHasher.
+# We depend on it directly rather than the axhash wrapper so we pull in only
+# what we actually need (no hash-utility functions).
+axhash-core = "0.8.1"
+# Disable default features to drop ahash; we bring our own hasher.
+hashbrown = { version = "0.15", default-features = false }
+
+[dev-dependencies]
+criterion = { version = "0.8.2", features = ["html_reports"] }
+
+[[bench]]
+name = "map_comparison"
+harness = false
