@@ -32,20 +32,24 @@ High-performance `HashMap` and `HashSet` collections for Rust.
 
 ---
 
-## Benchmark results
+## Benchmark Results
 
-Measured on an Apple Silicon machine (release build, `N = 100 000` items).  
-Hasher comparison: **axhash** (AES hardware) vs **SipHash-1-3** (std default).
+Measured on Apple Silicon (`release` build, `N = 100,000` items).
 
-| Scenario | AxHashMap | std HashMap | Speedup |
-|---|---:|---:|:---:|
-| Insert — `u64` keys | 379 µs | 1 032 µs | **2.7×** |
-| Insert — `String` keys | 896 µs | 1 673 µs | **1.9×** |
-| Lookup — all hits | 200 µs | 748 µs | **3.7×** |
-| Lookup — 50 % hit / 50 % miss | 767 µs | 1 994 µs | **2.6×** |
-| Iteration (full scan) | 130 µs | 124 µs | ~equal |
+Hasher comparison:
 
-> **Iteration is a draw** because iterating a map never calls the hasher — both maps share the same SwissTable memory layout courtesy of hashbrown.
+- **AxHashMap** (`hashbrown` + `axhash`)
+- **std::collections::HashMap** (`SipHash-1-3`)
+
+| Scenario                    | AxHashMap | std HashMap | Speedup  |
+| --------------------------- | --------: | ----------: | :------: |
+| Insert — `u64` keys         |    379 µs |    1,032 µs | **2.7×** |
+| Insert — `String` keys      |    896 µs |    1,673 µs | **1.9×** |
+| Lookup — all hits           |    200 µs |      748 µs | **3.7×** |
+| Lookup — 50% hit / 50% miss |    767 µs |    1,994 µs | **2.6×** |
+| Iteration (full scan)       |    130 µs |      124 µs |  ~equal  |
+
+> Iteration performance is effectively identical because iteration does not invoke the hasher. Both maps use the same SwissTable layout provided by `hashbrown`.
 
 Run the benchmarks yourself:
 
