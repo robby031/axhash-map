@@ -46,7 +46,7 @@ checksum = "8e1baa2dc4903cc6b5b89bcaa8ae10ffb1d43cdd01094c40a490b752f3f44d3b"
 
 [[package]]
 name = "axhash-map"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "axhash-core",
  "criterion",
