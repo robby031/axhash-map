@@ -40,13 +40,11 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "axhash-core"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e1baa2dc4903cc6b5b89bcaa8ae10ffb1d43cdd01094c40a490b752f3f44d3b"
+version = "0.8.2"
 
 [[package]]
 name = "axhash-map"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "axhash-core",
  "criterion",
