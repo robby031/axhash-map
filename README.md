@@ -16,6 +16,15 @@ High-performance `HashMap` and `HashSet` collections for Rust.
 
 `axhash-map` swaps the hasher for **axhash**, which exploits hardware AES instructions (AES-NI on x86-64, AES on ARMv8) to produce hashes at near-memory-bandwidth speed. The underlying table is **hashbrown** (SwissTable), the same implementation that backs `std::collections::HashMap` in Rust's standard library — so the table operations are identical; only the hashing step is faster.
 
+## Ecosystem
+
+| Crate | Description |
+|---|---|
+| `axhash` | High-performance hashing engine |
+| `axhash-map` | Fast HashMap/HashSet powered by `hashbrown` |
+| `axhash-indexmap` | Ordered maps with AxHash |
+| `axhash-dashmap` | Concurrent DashMap powered by AxHash |
+
 ```text
 ┌──────────────────────────────────────────────────────────┐
 │                       axhash-map                         │
