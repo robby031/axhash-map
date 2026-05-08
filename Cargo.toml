@@ -11,11 +11,7 @@ categories = ["data-structures", "algorithms"]
 readme = "README.md"
 
 [dependencies]
-# axhash-core is the implementation crate that owns AxBuildHasher.
-# We depend on it directly rather than the axhash wrapper so we pull in only
-# what we actually need (no hash-utility functions).
-axhash-core = { path = "../axhash/crates/axhash-core", version = "0.8.2" }
-# Disable default features to drop ahash; we bring our own hasher.
+axhash-core = "0.8.2"
 hashbrown = { version = "0.17.0", default-features = false }
 
 [dev-dependencies]

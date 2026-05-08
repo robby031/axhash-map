@@ -1,18 +1,3 @@
-//! Criterion benchmarks: `AxHashMap` vs `std::collections::HashMap`.
-//!
-//! Scenarios
-//! ---------
-//! 1. **Insert**   — fill an empty map with 100 000 items (u64 keys and String keys).
-//! 2. **Lookup**   — 100 000 lookups against a pre-populated map:
-//!                   - `hit`   : every key is present (best-case probing).
-//!                   - `mixed` : ~50 % of keys are absent (realistic workload).
-//! 3. **Iteration** — iterate all 100 000 entries and accumulate a checksum.
-//!
-//! Run:
-//!   cargo bench --bench map_comparison
-//!
-//! Results land in `target/criterion/` as HTML reports.
-
 use std::collections::HashMap as StdHashMap;
 use std::hint::black_box;
 use std::time::Duration;
@@ -20,8 +5,6 @@ use std::time::Duration;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 
 use axhash_map::AxHashMap;
-
-// ── Configuration ─────────────────────────────────────────────────────────────
 
 const N: usize = 100_000;
 const SEED: u64 = 0xabcd_ef01_2345_6789;
@@ -32,9 +15,6 @@ fn configured_criterion() -> Criterion {
         .warm_up_time(Duration::from_secs(2))
         .sample_size(100)
 }
-
-// ── SplitMix64 PRNG ───────────────────────────────────────────────────────────
-// Deterministic, zero-dependency PRNG used to generate reproducible key sets.
 
 struct SplitMix64(u64);
 
@@ -59,8 +39,6 @@ fn string_keys(n: usize, seed: u64) -> Vec<String> {
         .map(|i| format!("key-{:010}-{:016x}", i, rng.next()))
         .collect()
 }
-
-// ── 1. Insert ─────────────────────────────────────────────────────────────────
 
 fn bench_insert(c: &mut Criterion) {
     // --- u64 keys ---
@@ -92,7 +70,6 @@ fn bench_insert(c: &mut Criterion) {
         group.finish();
     }
 
-    // --- String keys ---
     {
         let keys = string_keys(N, SEED);
         let mut group = c.benchmark_group("insert/string");
@@ -122,13 +99,9 @@ fn bench_insert(c: &mut Criterion) {
     }
 }
 
-// ── 2. Lookup ─────────────────────────────────────────────────────────────────
-
 fn bench_lookup(c: &mut Criterion) {
     let insert_keys = u64_keys(N, SEED);
-    // Hit keys  : every key is in the map.
     let hit_keys = insert_keys.clone();
-    // Mixed keys: interleave existing keys with keys that are likely absent.
     let absent_keys = u64_keys(N, SEED ^ 0xffff_ffff_ffff_ffff);
     let mixed_keys: Vec<u64> = hit_keys
         .iter()
@@ -136,11 +109,9 @@ fn bench_lookup(c: &mut Criterion) {
         .flat_map(|(&h, &m)| [h, m])
         .collect();
 
-    // Pre-populate both maps once — lookup benches measure only query cost.
     let ax_map: AxHashMap<u64, u64> = insert_keys.iter().map(|&k| (k, k)).collect();
     let std_map: StdHashMap<u64, u64> = insert_keys.iter().map(|&k| (k, k)).collect();
 
-    // --- hit ---
     {
         let mut group = c.benchmark_group("lookup/hit");
         group.throughput(Throughput::Elements(N as u64));
@@ -172,7 +143,6 @@ fn bench_lookup(c: &mut Criterion) {
         group.finish();
     }
 
-    // --- mixed (50 % hit / 50 % miss) ---
     {
         let mut group = c.benchmark_group("lookup/mixed");
         group.throughput(Throughput::Elements(mixed_keys.len() as u64));
@@ -205,8 +175,6 @@ fn bench_lookup(c: &mut Criterion) {
     }
 }
 
-// ── 3. Iteration ──────────────────────────────────────────────────────────────
-
 fn bench_iter(c: &mut Criterion) {
     let insert_keys = u64_keys(N, SEED);
 
@@ -238,8 +206,6 @@ fn bench_iter(c: &mut Criterion) {
 
     group.finish();
 }
-
-// ── Entry point ───────────────────────────────────────────────────────────────
 
 criterion_group!(
     name    = benches;

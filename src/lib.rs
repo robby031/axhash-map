@@ -5,44 +5,16 @@ use core::ops::{Deref, DerefMut, Index};
 pub use axhash_core::{AxBuildHasher, AxHasher};
 pub use hashbrown::{HashMap as RawHashMap, HashSet as RawHashSet};
 
-// ── Compatibility type aliases ────────────────────────────────────────────────
-// These expose the raw `hashbrown` types with `AxHasher` baked in via the
-// standard-library `BuildHasherDefault<H>` adaptor.  Because they are plain
-// type aliases (no wrapper struct), third-party crates such as Serde can
-// derive `Serialize` / `Deserialize` on structs that contain them without
-// any extra configuration.
-
-/// Drop-in `hashbrown::HashMap` with [`AxHasher`] as the default hasher.
-/// Use this alias when maximum third-party compatibility matters (e.g. Serde
-/// `#[derive]`).  Every method on [`hashbrown::HashMap`] is available directly.
 pub type HashMap<K, V> = RawHashMap<K, V, BuildHasherDefault<AxHasher>>;
-
-/// Drop-in `hashbrown::HashSet` with [`AxHasher`] as the default hasher.
-/// Use this alias when maximum third-party compatibility matters (e.g. Serde
-/// `#[derive]`).  Every method on [`hashbrown::HashSet`] is available directly.
 pub type HashSet<T> = RawHashSet<T, BuildHasherDefault<AxHasher>>;
 
-// ── AxHashMap ────────────────────────────────────────────────────────────────
-/// `AxHashMap<K, V>` is a thin newtype wrapper around [`HashMap<K, V>`] that
-/// adds the familiar `::new()` / `::with_capacity()` constructor syntax.
-/// Every method on [`hashbrown::HashMap`] is accessible via `Deref`.
 pub struct AxHashMap<K, V, S = BuildHasherDefault<AxHasher>>(RawHashMap<K, V, S>);
 
 impl<K, V> AxHashMap<K, V, BuildHasherDefault<AxHasher>> {
-    /// Creates an empty map with the default [`AxHasher`].
-    ///
-    /// The map is initially created with a capacity of 0 and will reallocate
-    /// as elements are inserted.
     #[inline]
     pub fn new() -> Self {
         Self(RawHashMap::with_hasher(BuildHasherDefault::default()))
     }
-
-    /// Creates an empty map with at least the given capacity and the default
-    /// [`AxHasher`].
-    ///
-    /// The map will be able to hold at least `capacity` elements without
-    /// reallocating.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self(RawHashMap::with_capacity_and_hasher(
@@ -53,30 +25,20 @@ impl<K, V> AxHashMap<K, V, BuildHasherDefault<AxHasher>> {
 }
 
 impl<K, V, S: BuildHasher> AxHashMap<K, V, S> {
-    /// Creates an empty map that uses the supplied `hasher`.
-    ///
-    /// Use this when you need a custom seed or a completely different
-    /// [`BuildHasher`] (e.g. [`AxBuildHasher::with_seed`]).
     #[inline]
     pub fn with_hasher(hasher: S) -> Self {
         Self(RawHashMap::with_hasher(hasher))
     }
 
-    /// Creates an empty map with at least the given capacity that uses the
-    /// supplied `hasher`.
     #[inline]
     pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
         Self(RawHashMap::with_capacity_and_hasher(capacity, hasher))
     }
-
-    /// Consumes the wrapper and returns the underlying [`RawHashMap`].
     #[inline]
     pub fn into_inner(self) -> RawHashMap<K, V, S> {
         self.0
     }
 }
-
-// ── Deref / DerefMut ─────────────────────────────────────────────────────────
 
 impl<K, V, S> Deref for AxHashMap<K, V, S> {
     type Target = RawHashMap<K, V, S>;
@@ -93,8 +55,6 @@ impl<K, V, S> DerefMut for AxHashMap<K, V, S> {
         &mut self.0
     }
 }
-
-// ── Standard traits ───────────────────────────────────────────────────────────
 
 impl<K, V> Default for AxHashMap<K, V, BuildHasherDefault<AxHasher>> {
     #[inline]
@@ -138,8 +98,6 @@ where
     }
 }
 
-// ── FromIterator / Extend ─────────────────────────────────────────────────────
-
 impl<K: Hash + Eq, V> FromIterator<(K, V)> for AxHashMap<K, V, BuildHasherDefault<AxHasher>> {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let iter = iter.into_iter();
@@ -165,8 +123,6 @@ impl<'a, K: Hash + Eq + Copy, V: Copy, S: BuildHasher> Extend<(&'a K, &'a V)>
         self.0.extend(iter);
     }
 }
-
-// ── IntoIterator ──────────────────────────────────────────────────────────────
 
 impl<K, V, S> IntoIterator for AxHashMap<K, V, S> {
     type Item = (K, V);
@@ -198,8 +154,6 @@ impl<'a, K, V, S> IntoIterator for &'a mut AxHashMap<K, V, S> {
     }
 }
 
-// ── From conversions ──────────────────────────────────────────────────────────
-
 impl<K, V, S> From<RawHashMap<K, V, S>> for AxHashMap<K, V, S> {
     #[inline]
     fn from(inner: RawHashMap<K, V, S>) -> Self {
@@ -214,25 +168,14 @@ impl<K, V, S> From<AxHashMap<K, V, S>> for RawHashMap<K, V, S> {
     }
 }
 
-// ── AxHashSet ────────────────────────────────────────────────────────────────
-
-/// High-performance hash set backed by [`hashbrown`] (SwissTable) with
-/// [`AxHasher`] (AES-NI accelerated hashing) as the default hasher.
-///
-/// `AxHashSet<T>` is a thin newtype wrapper around [`HashSet<T>`] that adds
-/// the familiar `::new()` / `::with_capacity()` constructor syntax.
-/// Every method on [`hashbrown::HashSet`] is accessible via `Deref`.
 pub struct AxHashSet<T, S = BuildHasherDefault<AxHasher>>(RawHashSet<T, S>);
 
 impl<T> AxHashSet<T, BuildHasherDefault<AxHasher>> {
-    /// Creates an empty set with the default [`AxHasher`].
     #[inline]
     pub fn new() -> Self {
         Self(RawHashSet::with_hasher(BuildHasherDefault::default()))
     }
 
-    /// Creates an empty set with at least the given capacity and the default
-    /// [`AxHasher`].
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self(RawHashSet::with_capacity_and_hasher(
@@ -243,27 +186,21 @@ impl<T> AxHashSet<T, BuildHasherDefault<AxHasher>> {
 }
 
 impl<T, S: BuildHasher> AxHashSet<T, S> {
-    /// Creates an empty set that uses the supplied `hasher`.
     #[inline]
     pub fn with_hasher(hasher: S) -> Self {
         Self(RawHashSet::with_hasher(hasher))
     }
 
-    /// Creates an empty set with at least the given capacity that uses the
-    /// supplied `hasher`.
     #[inline]
     pub fn with_capacity_and_hasher(capacity: usize, hasher: S) -> Self {
         Self(RawHashSet::with_capacity_and_hasher(capacity, hasher))
     }
 
-    /// Consumes the wrapper and returns the underlying [`RawHashSet`].
     #[inline]
     pub fn into_inner(self) -> RawHashSet<T, S> {
         self.0
     }
 }
-
-// ── Deref / DerefMut ─────────────────────────────────────────────────────────
 
 impl<T, S> Deref for AxHashSet<T, S> {
     type Target = RawHashSet<T, S>;
@@ -280,8 +217,6 @@ impl<T, S> DerefMut for AxHashSet<T, S> {
         &mut self.0
     }
 }
-
-// ── Standard traits ───────────────────────────────────────────────────────────
 
 impl<T> Default for AxHashSet<T, BuildHasherDefault<AxHasher>> {
     #[inline]
@@ -311,8 +246,6 @@ impl<T: Hash + Eq, S: BuildHasher> PartialEq for AxHashSet<T, S> {
 
 impl<T: Hash + Eq, S: BuildHasher> Eq for AxHashSet<T, S> {}
 
-// ── FromIterator / Extend ─────────────────────────────────────────────────────
-
 impl<T: Hash + Eq> FromIterator<T> for AxHashSet<T, BuildHasherDefault<AxHasher>> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let iter = iter.into_iter();
@@ -337,8 +270,6 @@ impl<'a, T: Hash + Eq + Copy, S: BuildHasher> Extend<&'a T> for AxHashSet<T, S> 
     }
 }
 
-// ── IntoIterator ──────────────────────────────────────────────────────────────
-
 impl<T, S> IntoIterator for AxHashSet<T, S> {
     type Item = T;
     type IntoIter = hashbrown::hash_set::IntoIter<T>;
@@ -359,8 +290,6 @@ impl<'a, T, S> IntoIterator for &'a AxHashSet<T, S> {
     }
 }
 
-// ── From conversions ──────────────────────────────────────────────────────────
-
 impl<T, S> From<RawHashSet<T, S>> for AxHashSet<T, S> {
     #[inline]
     fn from(inner: RawHashSet<T, S>) -> Self {
@@ -375,14 +304,10 @@ impl<T, S> From<AxHashSet<T, S>> for RawHashSet<T, S> {
     }
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use core::hash::BuildHasherDefault;
-
-    // ── AxHashMap ────────────────────────────────────────────────────────────
 
     #[test]
     fn map_basic_operations() {
@@ -459,8 +384,6 @@ mod tests {
         assert_eq!(map["seeded"], 7);
     }
 
-    // ── Type alias: HashMap ───────────────────────────────────────────────────
-
     #[test]
     fn alias_hashmap_basic() {
         let mut map: HashMap<&str, u32> = HashMap::with_hasher(BuildHasherDefault::default());
@@ -475,8 +398,6 @@ mod tests {
             .collect::<RawHashMap<_, _, BuildHasherDefault<AxHasher>>>();
         assert_eq!(map.len(), 3);
     }
-
-    // ── AxHashSet ────────────────────────────────────────────────────────────
 
     #[test]
     fn set_basic_operations() {
@@ -543,8 +464,6 @@ mod tests {
         let wrapped: AxHashSet<i32> = raw.into();
         assert!(wrapped.contains(&42));
     }
-
-    // ── Type alias: HashSet ───────────────────────────────────────────────────
 
     #[test]
     fn alias_hashset_basic() {
